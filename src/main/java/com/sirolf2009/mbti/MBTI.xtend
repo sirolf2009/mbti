@@ -21,6 +21,10 @@ class MBTI {
 		get("/question") [
 			return Files.readAllLines(Paths.get("src/main/resources/question.html")).join("\n")
 		]
+		get("/profile") [req, res|
+			LoginController.ensureUserIsLoggedIn(req, res)
+			return Files.readAllLines(Paths.get("src/main/resources/question.html")).join("\n")
+		]
 		
 //		val question = new Question(new Date(), "Anne eats shit because it feels good, what is Anne?", FunctionType.SENSING.getFunctions(), Function.SE, 666, 0)
 //		println(question)
