@@ -103,13 +103,13 @@ body {
 	padding: 5em 0em;
 }
 
-#questionTitle h1,
-#questionTitle div {
-    display: inline;
-    vertical-align: middle;
+#questionTitle h1, #questionTitle div {
+	display: inline;
+	vertical-align: middle;
 }
+
 #questionTitle div {
-    float: right;
+	float: right;
 }
 
 .ui.progress {
@@ -126,8 +126,7 @@ body {
 			<div class="header item">
 				<img class="logo" src="logo.png"> MBTI typing trainer
 			</div>
-			<a href="#" class="item">Train</a>
-			<a href="#" class="item">Learn</a>
+			<a href="#" class="item">Train</a> <a href="#" class="item">Learn</a>
 			<a href="#" class="ui right floated dropdown item" tabindex="0">
 				Profile <i class="dropdown icon"></i>
 				<div class="menu transition hidden" tabindex="-1">
@@ -149,8 +148,7 @@ body {
 			<div class="header item">
 				<img class="logo" src="logo.png"> MBTI typing trainer
 			</div>
-			<a href="#" class="item">Train</a>
-			<a href="#" class="item">Learn</a>
+			<a href="#" class="item">Train</a> <a href="#" class="item">Learn</a>
 			<a href="#" class="ui right floated dropdown item" tabindex="0">
 				Profile <i class="dropdown icon"></i>
 				<div class="menu" tabindex="-1">
@@ -169,34 +167,51 @@ body {
 
 	<div class="ui text container">
 		<div class="ui segment">
-			<form class="ui form">
-				<div id="questionTitle">
-					<h1 class="ui header">A really shit question</h1>
-					<div class="ui star rating" data-rating="3" data-max-rating="5"></div>
-				</div>
+			<form class="ui form" method="POST">
+				<h1 class="ui header">Register</h1>
 				<div class="ui divider"></div>
-				<p>Anne eats shit because it feels good, what is Anne?</p>
-				<div class="two ui buttons">
-					<button class="ui button"
-						data-tooltip="People whose dominant function is Extraverted Feeling, focus their decision making on the external world (outside the mind) and the primary focus is on people and human kind."
-						data-position="bottom center">Fe</button>
-					<button class="ui button"
-						data-tooltip="Fi is a judging function where the individual makes decisions based on their own personal value system."
-						data-position="bottom center">Fi</button>
+				<div class="field">
+					<label>Username</label> <input type="text" name="username"
+						placeholder="Username">
 				</div>
-				<div class="ui divider"></div>
+				<div class="two fields">
+					<div class="field">
+						<label>Password</label> <input type="password" name="password"
+							placeholder="Password">
+					</div>
+					<div class="field">
+						<label>Repeat Password</label> <input type="password"
+							name="password-repeat" placeholder="Password">
+					</div>
+				</div>
+				<div class="field">
+					<label>Email</label> <input type="text" name="email"
+						placeholder="Email">
+				</div>
+				<div class="field">
+					<label>Type</label> 
+					<select name="type" class="ui fluid search selection dropdown">
+						<option value="">Type</option>
+						<option value="ENTP">ENTP</option>
+						<option value="ENTJ">ENTJ</option>
+						<option value="ENFJ">ENFJ</option>
+						<option value="ENFP">ENFP</option>
+						<option value="ESTJ">ESTJ</option>
+						<option value="ESTP">ESTP</option>
+						<option value="ESFJ">ESFJ</option>
+						<option value="ESFP">ESFP</option>
+						<option value="INTP">INTP</option>
+						<option value="INTJ">INTJ</option>
+						<option value="INFJ">INFJ</option>
+						<option value="INFP">INFP</option>
+						<option value="ISTJ">ISTJ</option>
+						<option value="ISTP">ISTP</option>
+						<option value="ISFJ">ISFJ</option>
+						<option value="ISFP">ISFP</option>
+					</select>
+				</div>
+				<button class="ui button" type="submit">Submit</button>
 			</form>
-			<div class="ui green progress" data-percent="" id="correctAnswers">
-				<div class="label">Answered 4 / 8 correctly</div>
-				<div class="bar"></div>
-			</div>
-			<script>
-				$(document).ready(function() {
-					$('#correctAnswers').progress({
-						percent : 50
-					});
-				});
-			</script>
 		</div>
 	</div>
 

@@ -103,13 +103,13 @@ body {
 	padding: 5em 0em;
 }
 
-#questionTitle h1,
-#questionTitle div {
-    display: inline;
-    vertical-align: middle;
+#questionTitle h1, #questionTitle div {
+	display: inline;
+	vertical-align: middle;
 }
+
 #questionTitle div {
-    float: right;
+	float: right;
 }
 
 .ui.progress {
@@ -126,8 +126,7 @@ body {
 			<div class="header item">
 				<img class="logo" src="logo.png"> MBTI typing trainer
 			</div>
-			<a href="#" class="item">Train</a>
-			<a href="#" class="item">Learn</a>
+			<a href="#" class="item">Train</a> <a href="#" class="item">Learn</a>
 			<a href="#" class="ui right floated dropdown item" tabindex="0">
 				Profile <i class="dropdown icon"></i>
 				<div class="menu transition hidden" tabindex="-1">
@@ -149,8 +148,7 @@ body {
 			<div class="header item">
 				<img class="logo" src="logo.png"> MBTI typing trainer
 			</div>
-			<a href="#" class="item">Train</a>
-			<a href="#" class="item">Learn</a>
+			<a href="#" class="item">Train</a> <a href="#" class="item">Learn</a>
 			<a href="#" class="ui right floated dropdown item" tabindex="0">
 				Profile <i class="dropdown icon"></i>
 				<div class="menu" tabindex="-1">
@@ -169,34 +167,58 @@ body {
 
 	<div class="ui text container">
 		<div class="ui segment">
-			<form class="ui form">
-				<div id="questionTitle">
-					<h1 class="ui header">A really shit question</h1>
-					<div class="ui star rating" data-rating="3" data-max-rating="5"></div>
+			<form class="ui form" method="POST">
+				<h1 class="ui header">Submit New Question</h1>
+				<div class="ui divider"></div>
+				<div class="field">
+					<label>Title</label> <input type="text" name="title"
+						placeholder="Title">
+				</div>
+				<div class="field">
+					<label>Description</label>
+					<textarea name="description">Description</textarea>
 				</div>
 				<div class="ui divider"></div>
-				<p>Anne eats shit because it feels good, what is Anne?</p>
-				<div class="two ui buttons">
-					<button class="ui button"
-						data-tooltip="People whose dominant function is Extraverted Feeling, focus their decision making on the external world (outside the mind) and the primary focus is on people and human kind."
-						data-position="bottom center">Fe</button>
-					<button class="ui button"
-						data-tooltip="Fi is a judging function where the individual makes decisions based on their own personal value system."
-						data-position="bottom center">Fi</button>
+				<h3 class="ui header">Answers</h3>
+
+				<div class="ui relaxed divided list">
+					<div class="item">
+						<div class="content">
+							<input type="text" name="answer1Title" placeholder="Fe">
+							<input type="radio" id="huey" name="drone" value="huey">
+  							<label for="huey">Correct Answer</label>
+						</div>
+					</div>
+					<div class="item">
+						<div class="content">
+							<a class="header">Fi</a>
+							<input type="radio" id="huey" name="drone" value="huey">
+  							<label for="huey">Correct Answer</label>
+						</div>
+					</div>
+					<div class="item">
+						<div class="content">
+							<a class="header">Te</a>
+							<input type="radio" id="huey" name="drone" value="huey">
+  							<label for="huey">Correct Answer</label>
+						</div>
+					</div>
+					<div class="item">
+						<div class="content">
+							<a class="header">Ti</a>
+							<input type="radio" id="huey" name="drone" value="huey">
+  							<label for="huey">Correct Answer</label>
+						</div>
+					</div>
 				</div>
-				<div class="ui divider"></div>
+				<button class="ui green icon button" type="button" onclick="addParamRow()" data-tooltip="Add a new answer">
+					<i class="plus icon"></i>
+				</button>
+				
+
+
+				<button class="ui button" type="submit">Submit</button>
 			</form>
-			<div class="ui green progress" data-percent="" id="correctAnswers">
-				<div class="label">Answered 4 / 8 correctly</div>
-				<div class="bar"></div>
-			</div>
-			<script>
-				$(document).ready(function() {
-					$('#correctAnswers').progress({
-						percent : 50
-					});
-				});
-			</script>
 		</div>
 	</div>
 
