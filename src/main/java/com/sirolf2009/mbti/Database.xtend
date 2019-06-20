@@ -39,6 +39,15 @@ class Database {
 		this.client = client
 		this.gson = new GsonBuilder().registerTypeAdapter(Question, new QuestionJsonDeserializer()).registerTypeAdapter(Profile, new ProfileJsonDeserializer()).registerTypeAdapter(User, new UserJsonDeserializer()).create()
 	}
+	
+	def getTopQuestions() {
+		tracer.span("getTopQuestions") [
+			val search = new SearchSourceBuilder() => [
+				query(QueryBuilders.matchAllQuery())
+			]
+			client.search(new SearchRequest(#["mbti-question"], search.sort("upvotes"))).getHits().map[gson.fromJson(getSourceAsString(), Question)].toList()
+		]
+	}
 
 	def getQuestion(String ID) {
 		tracer.span("getQuestion") [

@@ -9,6 +9,7 @@ import spark.Response
 import spark.Route
 
 import static extension com.sirolf2009.util.SpanUtil.*
+import org.apache.commons.lang3.exception.ExceptionUtils
 
 @FinalFieldsConstructor class LoginController {
 
@@ -32,31 +33,35 @@ import static extension com.sirolf2009.util.SpanUtil.*
 	}
 
 	def Route handleLoginPost() {
-		[ Request request, Response response |
-			tracer.span("loginPost") [
-				val username = request.queryParams("username")
-				val password = request.queryParams("password")
-				setTag("username", username)
-				setTag("password", password)
-				if(!db.authenticate(username, password)) {
-					return render("Incorrect username/password")
-				}
-				request.session().attribute("currentUser", username)
-				if(request.queryParams("loginRedirect") !== null) {
-					response.redirect(request.queryParams("loginRedirect"))
-				} else {
-					response.redirect("/profile")
-				}
-				return ""
-			]
+		[ Request req, Response response |
+			try {
+				tracer.span("loginPost") [
+					val username = req.queryParams("username")
+					val password = req.queryParams("password")
+					setTag("username", username)
+					setTag("password", password)
+					if(!db.authenticate(username, password)) {
+						return render("Incorrect username/password")
+					}
+					req.session().attribute("currentUser", username)
+					if(req.session().attribute("loginRedirect") !== null) {
+						response.redirect(req.session().attribute("loginRedirect"))
+					} else {
+						response.redirect("/profile")
+					}
+					return ""
+				]
+			} catch(Exception e) {
+				return ExceptionUtils.getStackTrace(e)
+			}
 		]
 	}
 
 	public static Route handleLogoutPost = [ Request request, Response response |
-			request.session().removeAttribute("currentUser")
-			request.session().attribute("loggedOut", true)
+		request.session().removeAttribute("currentUser")
+		request.session().attribute("loggedOut", true)
 //		response.redirect(Path.Web.LOGIN) 
-			return "login page"
+		return "login page"
 	]
 
 	// The origin of the request (request.pathInfo()) is saved in the session so

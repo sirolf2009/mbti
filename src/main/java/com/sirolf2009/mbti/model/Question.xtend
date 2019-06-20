@@ -13,8 +13,8 @@ import org.eclipse.xtend.lib.annotations.Data
 	Date created
 	String title
 	String description
-	List<Function> options
-	Function correctAnswer
+	List<String> options
+	int correctAnswer
 	int upvotes
 	int downvotes
 	

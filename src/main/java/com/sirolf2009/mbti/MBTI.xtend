@@ -23,15 +23,15 @@ class MBTI {
 		get("/") [
 			return Files.readAllLines(Paths.get("src/main/resources/Sticky_Example.html")).join("\n")
 		]
-		get("/question") [
-			return Files.readAllLines(Paths.get("src/main/resources/question.html")).join("\n")
-		]
+		get("/question/:ID", questionController.handleGetQuestion())
+		get("/questions", questionController.handleGetQuestions())
 		get("/profile") [ req, res |
 			LoginController.ensureUserIsLoggedIn(req, res)
 			return Files.readAllLines(Paths.get("src/main/resources/question.html")).join("\n")
 		]
 		path("/submit") [
 			get("/question", questionController.handleSubmitQuestionGet())
+			post("/question", questionController.handleSubmitQuestionPost())
 		]
 		get("/register") [ req, res |
 			return Files.readAllLines(Paths.get("src/main/resources/register.html")).join("\n")
