@@ -6,6 +6,7 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.util.Date
 import java.util.List
+import java.util.Optional
 import java.util.UUID
 import org.apache.commons.lang3.exception.ExceptionUtils
 import org.eclipse.xtend.lib.annotations.FinalFieldsConstructor
@@ -13,8 +14,8 @@ import spark.Request
 import spark.Response
 import spark.Route
 
-import static extension com.sirolf2009.util.SpanUtil.*
 import static extension com.sirolf2009.util.DoubleExtensions.map
+import static extension com.sirolf2009.util.SpanUtil.*
 
 @FinalFieldsConstructor class QuestionController {
 
@@ -40,7 +41,8 @@ import static extension com.sirolf2009.util.DoubleExtensions.map
 					val description = req.queryParams("description")
 					val options = req.queryParams().filter[startsWith("answer-") && endsWith("-text") && !contains("template")].sortBy[Integer.parseInt(split("-").get(1))].map[req.queryParams(it)].toList()
 					val correctOption = req.queryParams().filter[startsWith("answer-") && endsWith("-correct") && !contains("template")].map[Integer.parseInt(split("-").get(1))].findFirst[true]
-					val question = new Question(UUID.randomUUID(), username, new Date(), title, description, options, correctOption, 0, 0)
+					val explanation = if(req.queryParams("explanation").isNullOrEmpty()) Optional.empty() else Optional.of(req.queryParams("explanation"))
+					val question = new Question(UUID.randomUUID(), username, new Date(), title, description, options, correctOption, explanation, 0, 0)
 					db.saveQuestion(question)
 					return renderSubmitQuestion()
 				]
