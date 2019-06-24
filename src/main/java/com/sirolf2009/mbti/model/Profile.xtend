@@ -7,7 +7,15 @@ import org.eclipse.xtend.lib.annotations.Data
 @Data @GSonDTO class Profile {
 	
 	val String username
-	val Optional<String> email
-	val Optional<Type> type
+	val String email
+	val Type type
+	
+	def getEmail() {
+		return Optional.ofNullable(email)
+	}
+	
+	def getType() {
+		return Optional.ofNullable(type)
+	}
 	
 }

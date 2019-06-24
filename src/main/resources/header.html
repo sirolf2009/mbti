@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html data-kantu="1">
+<head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<!-- Standard Meta -->
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="viewport"
+	content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+<!-- Site Properties -->
+<title>MBTI typing trainer</title>
+
+
+<script src="https://code.jquery.com/jquery-3.4.1.min.js"
+	integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
+	crossorigin="anonymous"></script>
+<link rel="stylesheet"
+	href="https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.css">
+<script
+	src="https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.js"></script>
+
+<script>
+	$(document).ready(function() {
+
+		// fix main menu to page on passing
+		$('.main.menu').visibility({
+			type : 'fixed'
+		});
+		$('.overlay').visibility({
+			type : 'fixed',
+			offset : 80
+		});
+
+		// lazy load images
+		$('.image').visibility({
+			type : 'image',
+			transition : 'vertical flip in',
+			duration : 500
+		});
+
+		// show dropdown on hover
+		$('.main.menu  .ui.dropdown').dropdown({
+			on : 'hover'
+		});
+
+		$(".rating").rating();
+	});
+</script>
+<script src="/mbti.js"></script>
+
+<style type="text/css">
+body {
+	background-color: #FFFFFF;
+}
+
+.main.container {
+	margin-top: 2em;
+}
+
+.main.menu {
+	margin-top: 4em;
+	border-radius: 0;
+	border: none;
+	box-shadow: none;
+	transition: box-shadow 0.5s ease, padding 0.5s ease;
+}
+
+.main.menu .item img.logo {
+	margin-right: 1.5em;
+}
+
+.overlay {
+	float: left;
+	margin: 0em 3em 1em 0em;
+}
+
+.overlay .menu {
+	position: relative;
+	left: 0;
+	transition: left 0.5s ease;
+}
+
+.main.menu.fixed {
+	background-color: #FFFFFF;
+	border: 1px solid #DDD;
+	box-shadow: 0px 3px 5px rgba(0, 0, 0, 0.2);
+}
+
+.overlay.fixed .menu {
+	left: 800px;
+}
+
+.text.container .left.floated.image {
+	margin: 2em 2em 2em -4em;
+}
+
+.text.container .right.floated.image {
+	margin: 2em -4em 2em 2em;
+}
+
+.ui.footer.segment {
+	margin: 5em 0em 0em;
+	padding: 5em 0em;
+}
+
+#questionTitle h1,
+#questionTitle div {
+    display: inline;
+    vertical-align: middle;
+}
+#questionTitle div {
+    float: right;
+}
+
+.ui.progress {
+	background: red;
+}
+</style>
+
+</head>
+<body>
+
+	<div class="ui borderless main menu fixed"
+		style="position: fixed; top: 0px; left: auto; z-index: 10;">
+		<div class="ui text container">
+			<div class="header item">
+				<img class="logo" src="logo.png"> MBTI typing trainer
+			</div>
+			<a href="#" class="item">Train</a>
+			<a href="#" class="item">Learn</a>
+			<a href="#" class="ui right floated dropdown item" tabindex="0">
+				Profile <i class="dropdown icon"></i>
+				<div class="menu transition hidden" tabindex="-1">
+					<div class="item">Logout</div>
+					<div class="item">Profile</div>
+					<div class="divider"></div>
+					<div class="header">Progress</div>
+					<div class="item">Answered Questions</div>
+					<div class="item">Failed Questions</div>
+					<div class="header">Submit</div>
+					<div class="item">Submit New Question</div>
+				</div>
+			</a>
+		</div>
+	</div>
+	<div class="ui borderless main menu placeholder"
+		style="display: block; visibility: hidden;">
+		<div class="ui text container">
+			<div class="header item">
+				<img class="logo" src="logo.png"> MBTI typing trainer
+			</div>
+			<a href="#" class="item">Train</a>
+			<a href="#" class="item">Learn</a>
+			<a href="#" class="ui right floated dropdown item" tabindex="0">
+				Profile <i class="dropdown icon"></i>
+				<div class="menu" tabindex="-1">
+					<div class="item">Logout</div>
+					<div class="item">Profile</div>
+					<div class="divider"></div>
+					<div class="header">Progress</div>
+					<div class="item">Answered Questions</div>
+					<div class="item">Failed Questions</div>
+					<div class="header">Submit</div>
+					<div class="item">Submit New Question</div>
+				</div>
+			</a>
+		</div>
+	</div>

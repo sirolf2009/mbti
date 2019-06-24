@@ -8,6 +8,7 @@ import org.eclipse.xtend.lib.annotations.Data
 	
 	val UUID ID
 	val Profile profile
+	val UUID salt
 	val String password
 	
 }

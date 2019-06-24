@@ -10,6 +10,8 @@ import com.sirolf2009.mbti.model.User
 import com.sirolf2009.mbti.model.UserJsonDeserializer
 import io.opentracing.Tracer
 import org.apache.http.HttpHost
+import org.elasticsearch.action.admin.indices.create.CreateIndexRequest
+import org.elasticsearch.action.admin.indices.get.GetIndexRequest
 import org.elasticsearch.action.index.IndexRequest
 import org.elasticsearch.action.search.SearchRequest
 import org.elasticsearch.client.RestClient
@@ -38,8 +40,13 @@ class Database {
 		this.tracer = tracer
 		this.client = client
 		this.gson = new GsonBuilder().registerTypeAdapter(Question, new QuestionJsonDeserializer()).registerTypeAdapter(Profile, new ProfileJsonDeserializer()).registerTypeAdapter(User, new UserJsonDeserializer()).create()
+		#["mbti-user", "mbti-question"].forEach [
+			if(!client.indices().exists(new GetIndexRequest().indices(it))) {
+				client.indices().create(new CreateIndexRequest(it))
+			}
+		]
 	}
-	
+
 	def getTopQuestions() {
 		tracer.span("getTopQuestions") [
 			val search = new SearchSourceBuilder() => [
@@ -73,22 +80,29 @@ class Database {
 		]
 	}
 
-	def authenticate(String username, String password) {
-		tracer.span("authenticate") [
+	def getUser(String username) {
+		tracer.span("getUser") [
 			setTag("username", username)
-			setTag("password", password)
 			val search = new SearchSourceBuilder() => [
-//				query(QueryBuilders.boolQuery().must(QueryBuilders.termQuery("password", password)).must(QueryBuilders.termQuery("profile.username", username)))
-//				query(QueryBuilders.termQuery("password", password))
 				query(QueryBuilders.termQuery("profile.username", username))
 			]
-			val hits = client.search(new SearchRequest(#["mbti-user"], search)).getHits()
-			val hit = hits.findFirst[
-				gson.fromJson(sourceAsString, User).getPassword().equals(password)
-			]
+			val hit = client.search(new SearchRequest(#["mbti-user"], search)).getHits().map[gson.fromJson(sourceAsString, User)].findFirst[true]
 			val found = hit !== null
 			setTag("found", found)
-			return found
+			return hit
+		]
+	}
+
+	def getUserByID(String ID) {
+		tracer.span("getUserByID") [
+			setTag("ID", ID)
+			val search = new SearchSourceBuilder() => [
+				query(QueryBuilders.idsQuery().addIds(ID))
+			]
+			val hit = client.search(new SearchRequest(#["mbti-user"], search)).getHits().map[gson.fromJson(sourceAsString, User)].findFirst[true]
+			val found = hit !== null
+			setTag("found", found)
+			return hit
 		]
 	}
 
