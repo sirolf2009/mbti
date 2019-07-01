@@ -40,6 +40,20 @@
 					<target>1.8</target>
 				</configuration>
 			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>appassembler-maven-plugin</artifactId>
+				<version>2.0.0</version>
+				<configuration>
+					<assembleDirectory>${project.build.directory}/${project.artifactId}</assembleDirectory>
+					<programs>
+						<program>
+							<mainClass>nl.northpool.eex.pusher.Pusher</mainClass>
+							<id>run</id>
+						</program>
+					</programs>
+				</configuration>
+			</plugin>
 		</plugins>
 	</build>
 	<dependencies>
@@ -78,6 +92,11 @@
 			<groupId>io.jaegertracing</groupId>
 			<artifactId>jaeger-client</artifactId>
 			<version>0.35.5</version>
+		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-simple</artifactId>
+			<version>1.7.26</version>
 		</dependency>
 	</dependencies>
 </project>

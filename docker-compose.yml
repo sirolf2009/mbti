@@ -13,10 +13,13 @@ services:
         hard: -1
     ports:
       - "9200:9200"
+    restart: on-failure
   kibana:
     image: docker.elastic.co/kibana/kibana:6.3.2
     ports:
       - "5601:5601"
+    depends_on:
+      - elasticsearch
       
   collector:
     image: jaegertracing/jaeger-collector:1.8
@@ -29,12 +32,12 @@ services:
       - "14267"
       - "14250"
       - "9411:9411"
-    restart: on-failure
     depends_on:
       - kibana
     links:
       - elasticsearch
     command: ["--es.server-urls=http://elasticsearch:9200/","--es.tags-as-fields.all=true", "--es.num-shards=1", "--span-storage.type=elasticsearch"]
+    restart: on-failure
 
   agent:
     image: jaegertracing/jaeger-agent:1.8
@@ -46,11 +49,11 @@ services:
       - "6831:6831/udp"
       - "6832:6832/udp"
       - "5778:5778"
-    restart: on-failure
     depends_on:
       - collector
     links:
       - collector
+    restart: on-failure
 
   query:
     image: jaegertracing/jaeger-query:1.8
@@ -60,9 +63,9 @@ services:
     ports:
       - "16686:16686"
       - "16687"
-    restart: on-failure
     command: ["--es.server-urls=http://elasticsearch:9200", "--span-storage.type=elasticsearch", "--log-level=debug"]
     depends_on:
       - agent
     links:
       - elasticsearch
+    restart: on-failure

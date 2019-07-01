@@ -17,8 +17,7 @@ import org.eclipse.xtend.lib.annotations.Data
 	List<String> options
 	int correctAnswer
 	String explanation
-	int upvotes
-	int downvotes
+	QuestionCategory questionCategory
 	
 	def getExplanation() {
 		return Optional.ofNullable(explanation)

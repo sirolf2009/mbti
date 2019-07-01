@@ -2,18 +2,26 @@ package com.sirolf2009.mbti
 
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
+import com.sirolf2009.mbti.model.Attempt
+import com.sirolf2009.mbti.model.AttemptJsonDeserializer
 import com.sirolf2009.mbti.model.Profile
 import com.sirolf2009.mbti.model.ProfileJsonDeserializer
 import com.sirolf2009.mbti.model.Question
+import com.sirolf2009.mbti.model.QuestionCategory
 import com.sirolf2009.mbti.model.QuestionJsonDeserializer
 import com.sirolf2009.mbti.model.User
 import com.sirolf2009.mbti.model.UserJsonDeserializer
+import com.sirolf2009.mbti.model.Vote
 import io.opentracing.Tracer
+import java.util.Date
+import java.util.Optional
+import java.util.UUID
 import org.apache.http.HttpHost
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequest
 import org.elasticsearch.action.admin.indices.get.GetIndexRequest
 import org.elasticsearch.action.index.IndexRequest
 import org.elasticsearch.action.search.SearchRequest
+import org.elasticsearch.action.update.UpdateRequest
 import org.elasticsearch.client.RestClient
 import org.elasticsearch.client.RestHighLevelClient
 import org.elasticsearch.common.xcontent.XContentType
@@ -39,20 +47,44 @@ class Database {
 	new(Tracer tracer, RestHighLevelClient client) {
 		this.tracer = tracer
 		this.client = client
-		this.gson = new GsonBuilder().registerTypeAdapter(Question, new QuestionJsonDeserializer()).registerTypeAdapter(Profile, new ProfileJsonDeserializer()).registerTypeAdapter(User, new UserJsonDeserializer()).create()
-		#["mbti-user", "mbti-question"].forEach [
-			if(!client.indices().exists(new GetIndexRequest().indices(it))) {
-				client.indices().create(new CreateIndexRequest(it))
-			}
+		val gsonBuilder = new GsonBuilder() => [
+			registerTypeAdapter(Question, new QuestionJsonDeserializer())
+			registerTypeAdapter(Profile, new ProfileJsonDeserializer())
+			registerTypeAdapter(User, new UserJsonDeserializer())
+			registerTypeAdapter(Attempt, new AttemptJsonDeserializer())
+		]
+		this.gson = gsonBuilder.create()
+		tracer.span("setupDatabase") [
+			#["mbti-user", "mbti-question", "mbti-attempt", "mbti-vote"].forEach [ index |
+				tracer.span("checkIndex") [
+					setTag("index", index)
+					if(!client.indices().exists(new GetIndexRequest().indices(index))) {
+						tracer.span("createIndex") [
+							println(client.indices().create(new CreateIndexRequest(index)).acknowledged)
+						]
+					}
+				]
+			]
 		]
 	}
 
+	@Deprecated
 	def getTopQuestions() {
 		tracer.span("getTopQuestions") [
 			val search = new SearchSourceBuilder() => [
 				query(QueryBuilders.matchAllQuery())
 			]
-			client.search(new SearchRequest(#["mbti-question"], search.sort("upvotes"))).getHits().map[gson.fromJson(getSourceAsString(), Question)].toList()
+			client.search(new SearchRequest(#["mbti-question"], search)).getHits().map[gson.fromJson(getSourceAsString(), Question)].toList()
+		]
+	}
+
+	def getQuestions(QuestionCategory category) {
+		tracer.span("getQuestions") [
+			setTag("category", category.toString())
+			val search = new SearchSourceBuilder() => [
+				query(QueryBuilders.matchQuery("category", category.toString()))
+			]
+			client.search(new SearchRequest(#["mbti-question"], search)).getHits().map[gson.fromJson(getSourceAsString(), Question)].toList()
 		]
 	}
 
@@ -89,7 +121,7 @@ class Database {
 			val hit = client.search(new SearchRequest(#["mbti-user"], search)).getHits().map[gson.fromJson(sourceAsString, User)].findFirst[true]
 			val found = hit !== null
 			setTag("found", found)
-			return hit
+			return Optional.ofNullable(hit)
 		]
 	}
 
@@ -117,6 +149,84 @@ class Database {
 				source(json, XContentType.JSON)
 			]
 			client.index(request)
+		]
+	}
+
+	def saveAttempt(Attempt attempt) {
+		tracer.span("saveAttempt") [
+			setTag("attempt", attempt.toString())
+			val json = gson.toJson(attempt)
+			setTag("attempt.json", json)
+			val request = new IndexRequest("mbti-attempt") => [
+				id(attempt.getID().toString())
+				type("json")
+				source(json, XContentType.JSON)
+			]
+			client.index(request)
+		]
+	}
+	
+	def getAttempts(UUID userID) {
+		tracer.span("getAttempts") [
+			setTag("userID", userID.toString())
+			val search = new SearchSourceBuilder() => [
+				query(QueryBuilders.matchQuery("userID", userID.toString()))
+			]
+			val hits = client.search(new SearchRequest(#["mbti-attempt"], search)).getHits().map[gson.fromJson(sourceAsString, Attempt)].toList()
+			setTag("found", hits.size())
+			return hits
+		]
+	}
+
+	def updateVote(UUID voteID, boolean up) {
+		tracer.span("updateVote") [
+			setTag("voteID", voteID.toString())
+			setTag("up", up)
+			val update = new UpdateRequest("mbti-vote", "json", voteID.toString()).doc(#{
+				"up" -> up,
+				"timestamp" -> new Date()
+			})
+			client.update(update)
+		]
+	}
+
+	def saveVote(Vote vote) {
+		tracer.span("saveVote") [
+			setTag("vote", vote.toString())
+			val json = gson.toJson(vote)
+			setTag("vote.json", json)
+			val request = new IndexRequest("mbti-vote") => [
+				id(vote.getID().toString())
+				type("json")
+				source(json, XContentType.JSON)
+			]
+			client.index(request)
+		]
+	}
+
+	def getVote(UUID userID, UUID questionID) {
+		tracer.span("getVote") [
+			setTag("userID", userID.toString())
+			setTag("questionID", questionID.toString())
+			val search = new SearchSourceBuilder() => [
+				query(QueryBuilders.boolQuery().must(QueryBuilders.matchQuery("userID", userID.toString())).filter(QueryBuilders.matchQuery("questionID", questionID.toString())))
+			]
+			val hit = client.search(new SearchRequest(#["mbti-vote"], search)).getHits().map[gson.fromJson(sourceAsString, Vote)].findFirst[true]
+			val found = hit !== null
+			setTag("found", found)
+			return hit
+		]
+	}
+	
+	def getVotes(UUID questionID) {
+		tracer.span("getVotes") [
+			setTag("questionID", questionID.toString())
+			val search = new SearchSourceBuilder() => [
+				query(QueryBuilders.matchQuery("questionID", questionID.toString()))
+			]
+			val hits = client.search(new SearchRequest(#["mbti-vote"], search)).getHits().map[gson.fromJson(sourceAsString, Vote)].toList()
+			setTag("found", hits.size())
+			return hits
 		]
 	}
 

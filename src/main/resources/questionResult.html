@@ -1,20 +1,19 @@
-	<div class="ui text container">
-		<div class="ui segment">
-			<form class="ui form" action="/questions">
-				<div id="questionTitle">
-					<h1 class="ui header">%TITLE%</h1>
-					<div class="ui star rating" data-rating="%RATING%" data-max-rating="5"></div>
-				</div>
-				<div class="ui divider"></div>
-				<p>%DESCRIPTION%</p>
-				<div class="%ANSWERCOUNT% ui buttons">
-					%OPTIONS%
-				</div>
-				%OVERVIEW%
-				%EXPLANATION%
-				<button class="ui button" type="submit">Return to questions</button>
-			</form>
-<!-- 			<div class="ui green progress" data-percent="" id="correctAnswers">
+
+<div class="ui text container">
+	<div class="ui segment">
+		<form class="ui form" action="/questions">
+			<div id="questionTitle">
+				<h1 class="ui header">%TITLE%</h1>
+				<div class="ui star rating" data-rating="%RATING%"
+					data-max-rating="5"></div>
+			</div>
+			<div class="ui divider"></div>
+			<p>%DESCRIPTION%</p>
+			<div class="%ANSWERCOUNT% ui buttons">%OPTIONS%</div>
+			%OVERVIEW% %EXPLANATION% %VOTE%
+			<button class="ui button" type="submit">Return to questions</button>
+		</form>
+		<!-- 			<div class="ui green progress" data-percent="" id="correctAnswers">
 				<div class="label">Answered 4 / 8 correctly</div>
 				<div class="bar"></div>
 			</div>
@@ -25,5 +24,5 @@
 					});
 				});
 			</script> -->
-		</div>
 	</div>
+</div>

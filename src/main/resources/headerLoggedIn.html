@@ -113,11 +113,18 @@ body {
 			</div>
 			<a href="/questions" class="item">Train</a>
 			<a href="#" class="item">Learn</a>
-			<a href="/register" class="item" tabindex="0">
-				Register
-			</a>
-			<a href="/login" class="ui right floated dropdown item" tabindex="0">
-				Login
+			<a href="#" class="ui right floated dropdown item" tabindex="0">
+				Profile <i class="dropdown icon"></i>
+				<div class="menu transition hidden" tabindex="-1">
+					<div class="item">Logout</div>
+					<div class="item" onclick="window.location='/profile/%USERID%';">Profile</div>
+					<div class="divider"></div>
+					<div class="header">Progress</div>
+					<div class="item">Answered Questions</div>
+					<div class="item">Failed Questions</div>
+					<div class="header">Submit</div>
+					<div class="item" onclick="window.location='/submit/question';">Submit New Question</div>
+				</div>
 			</a>
 		</div>
 	</div>
@@ -129,11 +136,18 @@ body {
 			</div>
 			<a href="/questions" class="item">Train</a>
 			<a href="#" class="item">Learn</a>
-			<a href="/register" class="item" tabindex="0">
-				Register
-			</a>
-			<a href="/login" class="ui right floated dropdown item" tabindex="0">
-				Login
+			<a href="#" class="ui right floated dropdown item" tabindex="0">
+				Profile <i class="dropdown icon"></i>
+				<div class="menu" tabindex="-1">
+					<div class="item">Logout</div>
+					<div class="item" onclick="window.location='/profile/%USERID%';">Profile</div>
+					<div class="divider"></div>
+					<div class="header">Progress</div>
+					<div class="item">Answered Questions</div>
+					<div class="item">Failed Questions</div>
+					<div class="header">Submit</div>
+					<div class="item" onclick="window.location='/submit/question';">Submit New Question</div>
+				</div>
 			</a>
 		</div>
 	</div>

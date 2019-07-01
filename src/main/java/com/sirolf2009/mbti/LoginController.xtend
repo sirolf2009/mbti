@@ -3,9 +3,11 @@ package com.sirolf2009.mbti
 import com.sirolf2009.mbti.model.Profile
 import com.sirolf2009.mbti.model.Type
 import com.sirolf2009.mbti.model.User
+import com.sirolf2009.util.TimeUtil
 import io.opentracing.Tracer
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
+import java.util.Optional
 import java.util.UUID
 import org.apache.commons.lang3.exception.ExceptionUtils
 import org.eclipse.xtend.lib.annotations.FinalFieldsConstructor
@@ -25,9 +27,7 @@ import static extension com.sirolf2009.util.SpanUtil.*
 			tracer.span("profileGet") [
 				val ID = req.params("ID")
 				val user = db.getUserByID(ID)
-				println(user)
-				val profile = user.getProfile()
-				renderProfile(profile)
+				renderProfile(req, user)
 			]
 		]
 	}
@@ -43,7 +43,7 @@ import static extension com.sirolf2009.util.SpanUtil.*
 					}
 					return ""
 				}
-				return renderLogin(null)
+				return renderLogin(req, null)
 			]
 		]
 	}
@@ -55,19 +55,19 @@ import static extension com.sirolf2009.util.SpanUtil.*
 					val username = req.queryParams("username")
 					val password = req.queryParams("password")
 					setTag("username", username)
-					setTag("password", password)
-					val user = db.getUser(username)
-					if(hashPassword(password, user.getSalt()).equals(user.getPassword())) {
-						req.session().attribute("currentUser", username)
-						if(req.session().attribute("loginRedirect") !== null) {
-							response.redirect(req.session().attribute("loginRedirect"))
+					return db.getUser(username).map [ user |
+						if(hashPassword(password, user.getSalt()).equals(user.getPassword())) {
+							req.session().attribute("currentUser", user.getID().toString())
+							if(req.session().attribute("loginRedirect") !== null) {
+								response.redirect(req.session().attribute("loginRedirect"))
+							} else {
+								response.redirect('''/profile/«user.getID()»''')
+							}
+							return ""
 						} else {
-							response.redirect('''/profile/«user.getID()»''')
+							return renderLogin(req, "Incorrect username/password")
 						}
-						return ""
-					} else {
-						return renderLogin("Incorrect username/password")
-					}
+					].orElse(renderLogin(req, "Incorrect username/password"))
 				]
 			} catch(Exception e) {
 				return ExceptionUtils.getStackTrace(e)
@@ -77,7 +77,7 @@ import static extension com.sirolf2009.util.SpanUtil.*
 
 	def Route handleRegisterGet() {
 		[ Request req, Response res |
-			return renderRegister(null)
+			return renderRegister(req, null)
 		]
 	}
 
@@ -89,23 +89,26 @@ import static extension com.sirolf2009.util.SpanUtil.*
 					val password = req.queryParams("password")
 					val passwordRepeat = req.queryParams("password-repeat")
 					if(! password.equals(passwordRepeat)) {
-						return renderRegister("Passwords don't match")
+						return renderRegister(req, "Passwords don't match")
 					}
-					if(db.getUser(username) !== null) {
-						return renderRegister("This username is already in use")
+					if(db.getUser(username).isPresent()) {
+						return renderRegister(req, "This username is already in use")
 					}
-					
 					val email = req.queryParams("email")
-					val type = if(req.queryParams("type").isNullOrEmpty()) {
-						null
-					} else {
-						Type.valueOf(req.queryParams("type"))
+					if(email.isNullOrEmpty()) {
+						return renderRegister(req, "You need to fill in an email address")
 					}
+					val type = if(req.queryParams("type").isNullOrEmpty()) {
+							null
+						} else {
+							Type.valueOf(req.queryParams("type"))
+						}
 					val salt = UUID.randomUUID()
 					val hashedPassword = hashPassword(password, salt)
 					val user = new User(UUID.randomUUID(), new Profile(username, email, type), salt, hashedPassword)
 					db.saveUser(user)
-					return renderProfile(user.getProfile())
+					req.session().attribute("currentUser", user.getID().toString())
+					return renderProfile(req, user)
 				} catch(Exception e) {
 					e.printStackTrace()
 					return e.getMessage()
@@ -141,17 +144,32 @@ import static extension com.sirolf2009.util.SpanUtil.*
 	}
 
 	def static isLoggedIn(Request req) {
-		return req.session().attribute("currentUser") !== null
-	}
-	
-	def renderProfile(Profile profile) {
-		println(profile.getType().get().getClass())
-		val page = PageRenderer.getPage("profile.html")
-		page.replace("%USERNAME%", profile.getUsername()).replace("%TYPE%", profile.getType().map[toString()].orElse(""))
+		return req.getUserID().isPresent()
 	}
 
-	def renderLogin(String errorMessage) {
-		val page = PageRenderer.getPage("login.html")
+	def static getUserID(Request req) {
+		return Optional.ofNullable(req.session().attribute("currentUser") as String).map[UUID.fromString(it)]
+	}
+
+	def renderProfile(Request req, User user) {
+		val profile = user.getProfile()
+		val page = PageRenderer.getPage(req, "profile.html")
+		val attempts = db.getAttempts(user.getID()).sortBy[getTimestamp()].reverse().map [
+			val question = db.getQuestion(getQuestionID().toString())
+			'''
+			<div class="item">
+			    <i class="large «if(getChosenAnswer() == question.getCorrectAnswer()) "check" else "x"» middle aligned icon"></i>
+			    <div class="content">
+			      <a class="header">«question.getTitle()»</a>
+			      <div class="description">You answered this at «TimeUtil.format(getTimestamp())»</div>
+			    </div>
+			</div>'''
+		].join("\n")
+		page.replace("%USERNAME%", profile.getUsername()).replace("%TYPE%", profile.getType().map[toString()].orElse("")).replace("%GRAVATAR%", profile.getGravatar()).replace("%ATTEMPTS%", attempts)
+	}
+
+	def renderLogin(Request req, String errorMessage) {
+		val page = PageRenderer.getPage(req, "login.html")
 		if(!errorMessage.isNullOrEmpty()) {
 			return page.replace("%ERRORMESSAGE%", errorMessage)
 		} else {
@@ -159,8 +177,8 @@ import static extension com.sirolf2009.util.SpanUtil.*
 		}
 	}
 
-	def renderRegister(String errorMessage) {
-		val page = PageRenderer.getPage("register.html")
+	def renderRegister(Request req, String errorMessage) {
+		val page = PageRenderer.getPage(req, "register.html")
 		if(!errorMessage.isNullOrEmpty()) {
 			return page.replace("%ERRORMESSAGE%", errorMessage)
 		} else {
