@@ -19,6 +19,7 @@ import java.util.UUID
 import org.apache.http.HttpHost
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequest
 import org.elasticsearch.action.admin.indices.get.GetIndexRequest
+import org.elasticsearch.action.admin.indices.refresh.RefreshRequest
 import org.elasticsearch.action.index.IndexRequest
 import org.elasticsearch.action.search.SearchRequest
 import org.elasticsearch.action.update.UpdateRequest
@@ -60,7 +61,7 @@ class Database {
 					setTag("index", index)
 					if(!client.indices().exists(new GetIndexRequest().indices(index))) {
 						tracer.span("createIndex") [
-							println(client.indices().create(new CreateIndexRequest(index)).acknowledged)
+							client.indices().create(new CreateIndexRequest(index)).acknowledged
 						]
 					}
 				]
@@ -82,7 +83,7 @@ class Database {
 		tracer.span("getQuestions") [
 			setTag("category", category.toString())
 			val search = new SearchSourceBuilder() => [
-				query(QueryBuilders.matchQuery("category", category.toString()))
+				query(QueryBuilders.matchQuery("questionCategory", category.toString()))
 			]
 			client.search(new SearchRequest(#["mbti-question"], search)).getHits().map[gson.fromJson(getSourceAsString(), Question)].toList()
 		]
@@ -109,6 +110,7 @@ class Database {
 				source(json, XContentType.JSON)
 			]
 			client.index(request)
+			client.indices().refresh(new RefreshRequest("mbti-question"))
 		]
 	}
 

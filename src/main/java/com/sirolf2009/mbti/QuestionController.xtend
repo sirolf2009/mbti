@@ -20,28 +20,30 @@ import spark.Route
 import static extension com.sirolf2009.util.DoubleExtensions.map
 import static extension com.sirolf2009.util.OptionalUtil.*
 import static extension com.sirolf2009.util.SpanUtil.*
+import static extension com.sirolf2009.mbti.RestSpanUtil.*
+import java.util.Objects
 
 @FinalFieldsConstructor class QuestionController {
 
 	val Tracer tracer
 	val Database db
-	
+
 	def Route handleVoteQuestionPost() {
 		val gson = new Gson();
 		[ Request req, Response res |
-			tracer.span("voteQuestionPost") [
+			tracer.span("voteQuestionPost", req) [
 				setTag("body", req.body())
-				LoginController.getUserID(req).ifPresent[userID|
+				LoginController.getUserID(req).ifPresent [ userID |
 					val json = gson.fromJson(req.body(), JsonObject)
 					val questionID = UUID.fromString(json.getAsJsonPrimitive("questionID").getAsString())
 					val up = json.getAsJsonPrimitive("up").getAsBoolean()
-					
-					Optional.ofNullable(db.getVote(userID, questionID)).consume([existing|
+
+					Optional.ofNullable(db.getVote(userID, questionID)).consume([ existing |
 						tracer.span("updateVote") [
 							setTag("existing", existing.toString())
 							db.updateVote(existing.getID(), up)
 						]
-					],[
+					], [
 						tracer.span("createNewVote") [
 							val vote = new Vote(UUID.randomUUID(), userID, questionID, up, new Date())
 							db.saveVote(vote)
@@ -55,7 +57,7 @@ import static extension com.sirolf2009.util.SpanUtil.*
 
 	def Route handleSubmitQuestionGet() {
 		[ Request req, Response res |
-			tracer.span("submitQuestionGet") [
+			tracer.span("submitQuestionGet", req) [
 				LoginController.ensureUserIsLoggedIn(req, res)
 				return renderSubmitQuestion(req)
 			]
@@ -65,12 +67,8 @@ import static extension com.sirolf2009.util.SpanUtil.*
 	def Route handleSubmitQuestionPost() {
 		[ Request req, Response res |
 			try {
-				tracer.span("submitQuestionPost") [
-					println(req.queryParams())
+				tracer.span("submitQuestionPost", req) [
 					LoginController.ensureUserIsLoggedIn(req, res)
-					req.queryParams().forEach[
-						println('''«it»: «req.queryParams(it)»''')
-					]
 					val username = req.session().attribute("currentUser")
 					val title = req.queryParams("title")
 					val description = req.queryParams("description")
@@ -80,7 +78,8 @@ import static extension com.sirolf2009.util.SpanUtil.*
 					val questionCategory = QuestionCategory.valueOf(req.queryParams("questionCategory"))
 					val question = new Question(UUID.randomUUID(), username, new Date(), title, description, options, correctOption, explanation, questionCategory)
 					db.saveQuestion(question)
-					return renderQuestion(req, question)
+					res.redirect('''/question/«question.getID()»''')
+					return ""
 				]
 			} catch(Exception e) {
 				return ExceptionUtils.getStackTrace(e).replace("\n", "<br />")
@@ -90,11 +89,11 @@ import static extension com.sirolf2009.util.SpanUtil.*
 
 	def Route handleGetQuestions() {
 		[ Request req, Response res |
-			tracer.span("getQuestion") [
+			tracer.span("getQuestion", req) [
 				try {
 					return renderQuestionsList(req)
 				} catch(Exception e) {
-					return ExceptionUtils.getStackTrace(e)
+					return ExceptionUtils.getStackTrace(e).replace("\n", "<br />")
 				}
 			]
 		]
@@ -102,11 +101,11 @@ import static extension com.sirolf2009.util.SpanUtil.*
 
 	def Route handleGetQuestionsCategory() {
 		[ Request req, Response res |
-			tracer.span("getQuestion") [
+			tracer.span("getQuestion", req) [
 				try {
 					return renderQuestionsList(req, db.getQuestions(QuestionCategory.valueOf(req.params(":CATEGORY").toUpperCase())))
 				} catch(Exception e) {
-					return ExceptionUtils.getStackTrace(e)
+					return ExceptionUtils.getStackTrace(e).replace("\n", "<br />")
 				}
 			]
 		]
@@ -114,12 +113,14 @@ import static extension com.sirolf2009.util.SpanUtil.*
 
 	def Route handleGetQuestion() {
 		[ Request req, Response res |
-			tracer.span("submitQuestionGet") [
+			tracer.span("submitQuestionGet", req) [
 				try {
 					val ID = req.params("ID")
-					return renderQuestion(req, db.getQuestion(ID))
+					val question = db.getQuestion(ID)
+					Objects.requireNonNull(question, '''Question with «ID» not found!''')
+					return renderQuestion(req, question)
 				} catch(Exception e) {
-					return ExceptionUtils.getStackTrace(e)
+					return ExceptionUtils.getStackTrace(e).replace("\n", "<br />")
 				}
 			]
 		]
@@ -127,19 +128,19 @@ import static extension com.sirolf2009.util.SpanUtil.*
 
 	def Route handlePostQuestion() {
 		[ Request req, Response res |
-			tracer.span("submitQuestionPost") [
+			tracer.span("submitQuestionPost", req) [
 				try {
 					val ID = req.params("ID")
 					val question = db.getQuestion(ID)
 					val chosenAnswer = Integer.parseInt(req.queryParams().findFirst[startsWith("answer-")].replace("answer-", ""))
-					LoginController.getUserID(req).ifPresent[userID|
+					LoginController.getUserID(req).ifPresent [ userID |
 						tracer.span("saveAttempt") [
 							db.saveAttempt(new Attempt(UUID.randomUUID(), userID, UUID.fromString(ID), chosenAnswer, new Date()))
 						]
 					]
 					renderQuestionResult(req, question, chosenAnswer)
 				} catch(Exception e) {
-					return ExceptionUtils.getStackTrace(e)
+					return ExceptionUtils.getStackTrace(e).replace("\n", "<br />")
 				}
 			]
 		]
@@ -147,7 +148,7 @@ import static extension com.sirolf2009.util.SpanUtil.*
 
 	def renderSubmitQuestion(Request req) {
 		val page = PageRenderer.getPage(req, "submitQuestion.html")
-		val categories = QuestionCategory.values().sortBy[getOrder()].map[
+		val categories = QuestionCategory.values().sortBy[getOrder()].map [
 			'''
 			<option value="«name()»">«getHumanReadable()»</option>'''
 		].join("\n")
@@ -156,7 +157,7 @@ import static extension com.sirolf2009.util.SpanUtil.*
 
 	def renderQuestionsList(Request req, List<Question> questions) {
 		val page = PageRenderer.getPage(req, "questionList.html")
-		val questionsText = questions.map[
+		val questionsText = questions.map [
 			val upvotes = db.getVotes(getID())
 			'''
 			<div class="item" id="answer-0">
@@ -175,43 +176,51 @@ import static extension com.sirolf2009.util.SpanUtil.*
 	}
 
 	def renderQuestion(Request req, Question question) {
-		val page = PageRenderer.getPage(req, "question.html")
-		val optionsText = question.getOptions().map[
-			'''
-			<button class="ui button" type="submit" name="answer-«question.getOptions().indexOf(it)»">«it»</button>'''
-		].join("\n")
-		val votes = db.getVotes(question.getID())
-		val rating = votes.filter[isUp()].size().doubleValue().map(0, votes.size(), 1, 5)
-		return page.replace("%TITLE%", question.getTitle()).replace("%DESCRIPTION%", question.getDescription()).replace("%OPTIONS%", optionsText).replace("%RATING%", Math.round(rating).toString()).replace("%ANSWERCOUNT%", countToHuman.get(question.getOptions().size()))
+		try {
+			val page = PageRenderer.getPage(req, "question.html")
+			val optionsText = question.getOptions().map [
+				'''
+				<button class="ui button" type="submit" name="answer-«question.getOptions().indexOf(it)»">«it»</button>'''
+			].join("\n")
+			val votes = db.getVotes(question.getID())
+			val rating = votes.filter[isUp()].size().doubleValue().map(0, votes.size(), 1, 5)
+			return page.replace("%TITLE%", question.getTitle()).replace("%DESCRIPTION%", question.getDescription()).replace("%OPTIONS%", optionsText).replace("%RATING%", Math.round(rating).toString()).replace("%ANSWERCOUNT%", countToHuman.get(question.getOptions().size()))
+		} catch(Exception e) {
+			throw new RuntimeException('''Failed to render question «question»''', e)
+		}
 	}
 
 	def renderQuestionResult(Request req, Question question, int chosenAnswer) {
-		val page = PageRenderer.getPage(req, "questionResult.html")
-		val optionsText = question.getOptions().map[
-			'''
-			<button class="ui «if(question.getOptions().indexOf(it) === chosenAnswer) "green" else "red"» button">«it»</button>'''
-		].join("\n")
-		val votes = db.getVotes(question.getID())
-		val rating = votes.filter[isUp()].size().doubleValue().map(0, votes.size(), 1, 5)
-		val overview = if(question.getCorrectAnswer() == chosenAnswer) {
-			'''
-			Correct!'''
-		} else {
-			'''
-			Wrong! The correct answer was «question.getOptions().get(question.getCorrectAnswer())»'''
+		try {
+			val page = PageRenderer.getPage(req, "questionResult.html")
+			val optionsText = question.getOptions().map [
+				'''
+				<button class="ui «if(question.getOptions().indexOf(it) === chosenAnswer) "green" else "red"» button">«it»</button>'''
+			].join("\n")
+			val votes = db.getVotes(question.getID())
+			val rating = votes.filter[isUp()].size().doubleValue().map(0, votes.size(), 1, 5)
+			val overview = if(question.getCorrectAnswer() == chosenAnswer) {
+					'''
+					Correct!'''
+				} else {
+					'''
+					Wrong! The correct answer was «question.getOptions().get(question.getCorrectAnswer())»'''
+				}
+			val vote = LoginController.getUserID(req).map [
+				'''
+				<div class="ui buttons">
+					<button class="ui positive button" onClick="vote('«question.getID()»', true)">Vote up</button>
+					<div class="or"></div>
+					<button class="ui negative button" onClick="vote('«question.getID()»', false)">Vote down</button>
+				</div>'''
+			].orElse("")
+			val explanation = question.getExplanation().map['''<p>«it»</p>'''].orElse("")
+			return page.replace("%TITLE%", question.getTitle()).replace("%ID%", question.getID().toString()).replace("%DESCRIPTION%", question.getDescription()).replace("%OPTIONS%", optionsText).replace("%RATING%", Math.round(rating).toString()).replace("%ANSWERCOUNT%", countToHuman.get(question.getOptions().size())).replace("%OVERVIEW%", overview).replace("%EXPLANATION%", explanation).replace("%VOTE%", vote)
+		} catch(Exception e) {
+			throw new RuntimeException('''Failed to render question result, chosenAnswer=«chosenAnswer» question=«question»''', e)
 		}
-		val vote = LoginController.getUserID(req).map[
-			'''
-			<div class="ui buttons">
-				<button class="ui positive button" onClick="vote('«question.getID()»', true)">Vote up</button>
-				<div class="or"></div>
-				<button class="ui negative button" onClick="vote('«question.getID()»', false)">Vote down</button>
-			</div>'''
-		].orElse("")
-		val explanation = question.getExplanation().map['''<p>«it»</p>'''].orElse("")
-		return page.replace("%TITLE%", question.getTitle()).replace("%ID%", question.getID().toString()).replace("%DESCRIPTION%", question.getDescription()).replace("%OPTIONS%", optionsText).replace("%RATING%", Math.round(rating).toString()).replace("%ANSWERCOUNT%", countToHuman.get(question.getOptions().size())).replace("%OVERVIEW%", overview).replace("%EXPLANATION%", explanation).replace("%VOTE%", vote)
 	}
-	
+
 	static val countToHuman = #{
 		1 -> "one",
 		2 -> "two",
